@@ -2,12 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -36,19 +35,14 @@ func notImplemented(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-func HashPassword(password string) (string, error) {
-    bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-    return string(bytes), err
-}
-func CheckPasswordHash(password, hash string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-    return err == nil
-}
-
 func createUser(w http.ResponseWriter, r *http.Request) {
-	err := register(
+	password, err := HashPassword(r.FormValue("password"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = register(
 		r.FormValue("username"),
-		HashPassword(r.FormValue("password")),
+		password,
 		r.FormValue("email"),
 	)
 
@@ -90,10 +84,10 @@ func getTeams(w http.ResponseWriter, r *http.Request) {
 	}
 	teamB := Team{
 		"2",
-		"FC Bayern München"
+		"FC Bayern München",
 	}
 
-	teams := []Team {
+	teams := []Team{
 		teamA,
 		teamB,
 	}
@@ -139,10 +133,10 @@ func getBets(w http.ResponseWriter, r *http.Request) {
 	}
 	teamB := Team{
 		"2",
-		"FC Bayern München"
+		"FC Bayern München",
 	}
 
-	teams := []Team {
+	teams := []Team{
 		teamA,
 		teamB,
 	}
@@ -188,10 +182,10 @@ func getMatches(w http.ResponseWriter, r *http.Request) {
 	}
 	teamB := Team{
 		"2",
-		"FC Bayern München"
+		"FC Bayern München",
 	}
 
-	teams := []Team {
+	teams := []Team{
 		teamA,
 		teamB,
 	}
@@ -262,7 +256,7 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	users := []User {
+	users := []User{
 		userA,
 		userB,
 	}
