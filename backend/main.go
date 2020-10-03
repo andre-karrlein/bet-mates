@@ -1,11 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -78,18 +80,35 @@ func getTeams(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 
-	teamA := Team{
-		"1",
-		"RB Leipzig",
+	connection := Config()
+
+	db, err := sql.Open("mysql", connection)
+	if err != nil {
+		log.Fatal(err)
 	}
-	teamB := Team{
-		"2",
-		"FC Bayern München",
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	teams := []Team{
-		teamA,
-		teamB,
+	rows, err := db.Query(`SELECT id, name FROM teams`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var teams []Team
+	for rows.Next() {
+		var e Team
+		err = rows.Scan(&e.ID, &e.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		teams = append(teams, e)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	teamJSON, err := json.Marshal(teams)
@@ -233,32 +252,36 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 
-	userA := User{
-		"1",
-		"akarrlein",
-		"testPASSWORD",
-		"email@test.com",
-		0.0,
-		Team{
-			"1",
-			"RB Leipzig",
-		},
+	connection := Config()
+
+	db, err := sql.Open("mysql", connection)
+	if err != nil {
+		log.Fatal(err)
 	}
-	userB := User{
-		"2",
-		"pweber",
-		"testPASSWORD",
-		"p@test2.de",
-		0.0,
-		Team{
-			"2",
-			"FC Bayern München",
-		},
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	users := []User{
-		userA,
-		userB,
+	rows, err := db.Query(`SELECT id, username, email, score, t.id, t.name FROM users JOIN teams t ON user.favorite_team = teams.id`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var e User
+		err = rows.Scan(&e.ID, &e.Username, &e.Email, &e.Score, &e.Favorite.ID, &e.Favorite.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		users = append(users, e)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
 	}
 	usersJSON, err := json.Marshal(users)
 
