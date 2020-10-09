@@ -61,12 +61,38 @@ func getTeam(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	team := Team{
-		id,
-		"RB Leipzig",
+	connection := Config()
+
+	db, err := sql.Open("mysql", connection)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	teamJSON, err := json.Marshal(team)
+	rows, err := db.Query(`SELECT id, name FROM teams WHERE id = ?`, id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var teams []Team
+	for rows.Next() {
+		var e Team
+		err = rows.Scan(&e.ID, &e.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		teams = append(teams, e)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	teamJSON, err := json.Marshal(teams[0])
 
 	if err != nil {
 		log.Fatal(err)
@@ -226,19 +252,38 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	userA := User{
-		id,
-		"akarrlein",
-		"testPASSWORD",
-		"email@test.com",
-		0.0,
-		Team{
-			"1",
-			"RB Leipzig",
-		},
+	connection := Config()
+
+	db, err := sql.Open("mysql", connection)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	usersJSON, err := json.Marshal(userA)
+	rows, err := db.Query(`SELECT id, username, email, score, t.id, t.name FROM users JOIN teams t ON user.favorite_team = teams.id WHERE user.id = ?`, id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var e User
+		err = rows.Scan(&e.ID, &e.Username, &e.Email, &e.Score, &e.Favorite.ID, &e.Favorite.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		users = append(users, e)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+	usersJSON, err := json.Marshal(users[0])
 
 	if err != nil {
 		log.Fatal(err)
